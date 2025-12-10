@@ -4,11 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
 // Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
 var _ = fmt.Print
+
+const (
+	EXIT = "exit"
+	ECHO = "echo"
+	TYPE = "type"
+)
 
 var builtinCommands = make(map[string]bool)
 var executables = make(map[string]string)
@@ -31,9 +38,9 @@ func init() {
 			}
 		}
 	}
-	builtinCommands["echo"] = true
-	builtinCommands["type"] = true
-	builtinCommands["exit"] = true
+	builtinCommands[ECHO] = true
+	builtinCommands[EXIT] = true
+	builtinCommands[TYPE] = true
 }
 
 func main() {
@@ -45,24 +52,57 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Error reading input:", err)
 			os.Exit(1)
 		}
-		if command == "exit\n" {
-			os.Exit(0)
-		} else if command == "echo\n" {
-			fmt.Println()
-		} else if strings.HasPrefix(command, "echo ") {
-			fmt.Print(command[5:len(command)-1] + "\n")
-		} else if command == "type\n" {
-		} else if strings.HasPrefix(command, "type ") {
-			com := strings.TrimSpace(command[5 : len(command)-1])
-			if _, exists := builtinCommands[com]; exists {
-				fmt.Printf("%s is a shell builtin\n", com)
-			} else if _, path := executables[com]; path {
-				fmt.Printf("%s is %s\n", com, executables[com])
-			} else {
-				fmt.Println(com + ": not found")
-			}
-		} else {
+		command = strings.TrimSpace(command)
+		splits := strings.Split(command, " ")
+		command = splits[0]
+		args := splits[1:]
+
+		command = strings.Split(command, "\n")[0]
+		switch {
+		case command == EXIT:
+			handleExit()
+		case command == ECHO:
+			handleEcho(args)
+		case command == TYPE:
+			handleType(args)
+		case func() bool { _, ok := executables[command]; return ok }():
+			handleExecutable(executables[command], args)
+		default:
 			fmt.Println(command[:len(command)-1] + ": command not found")
 		}
 	}
+}
+
+func handleExit() {
+	os.Exit(0)
+}
+
+func handleEcho(args []string) {
+	if len(args) > 0 {
+		fmt.Println(strings.Join(args, " "))
+	} else {
+		fmt.Println()
+	}
+}
+
+func handleType(args []string) {
+	for _, arg := range args {
+		if len(arg) > 0 {
+			if _, exists := builtinCommands[arg]; exists {
+				fmt.Printf("%s is a shell builtin\n", arg)
+			} else if _, path := executables[arg]; path {
+				fmt.Printf("%s is %s\n", arg, executables[arg])
+			} else {
+				fmt.Println(arg + ": not found")
+			}
+		}
+	}
+}
+
+func handleExecutable(command string, args []string) {
+	cmd := exec.Command(command, args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+	}
+	fmt.Print(string(out))
 }
