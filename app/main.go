@@ -32,7 +32,7 @@ func init() {
 				if info != nil {
 					perms := info.Mode().Perm().String()
 					if strings.Contains(perms, "x") {
-						executables[file.Name()] = path + "/" + file.Name()
+						executables[file.Name()] = path
 					}
 				}
 			}
@@ -66,7 +66,7 @@ func main() {
 		case command == TYPE:
 			handleType(args)
 		case func() bool { _, ok := executables[command]; return ok }():
-			handleExecutable(executables[command], args)
+			handleExecutable(command, executables[command], args)
 		default:
 			fmt.Println(command[:len(command)-1] + ": command not found")
 		}
@@ -91,7 +91,7 @@ func handleType(args []string) {
 			if _, exists := builtinCommands[arg]; exists {
 				fmt.Printf("%s is a shell builtin\n", arg)
 			} else if _, path := executables[arg]; path {
-				fmt.Printf("%s is %s\n", arg, executables[arg])
+				fmt.Printf("%s is %s\n", arg, executables[arg]+"/"+arg)
 			} else {
 				fmt.Println(arg + ": not found")
 			}
@@ -99,8 +99,9 @@ func handleType(args []string) {
 	}
 }
 
-func handleExecutable(command string, args []string) {
+func handleExecutable(command string, path string, args []string) {
 	cmd := exec.Command(command, args...)
+	cmd.Dir = path
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 	}
