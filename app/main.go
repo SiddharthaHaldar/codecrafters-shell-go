@@ -3,6 +3,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 // Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
 var _ = fmt.Print
@@ -17,7 +18,12 @@ func main() {
 		}
 		if command == "exit\n" {
 			os.Exit(0)
+		} else if command == "echo\n" {
+			fmt.Println()
+		} else if strings.HasPrefix(command, "echo ") {
+			fmt.Print(command[5:len(command)-1]+"\n")
+		} else{
+			fmt.Println(command[:len(command)-1] + ": command not found")
 		}
-		fmt.Println(command[:len(command)-1] + ": command not found")
 	}
 }
