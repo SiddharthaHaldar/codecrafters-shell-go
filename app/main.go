@@ -16,6 +16,7 @@ const (
 	ECHO = "echo"
 	TYPE = "type"
 	PWD  = "pwd"
+	CD = "cd"
 )
 
 var builtinCommands = make(map[string]bool)
@@ -43,6 +44,7 @@ func init() {
 	builtinCommands[EXIT] = true
 	builtinCommands[TYPE] = true
 	builtinCommands[PWD] = true
+	builtinCommands[CD] = true
 }
 
 func main() {
@@ -79,7 +81,9 @@ func handleBuiltIn(command string, args []string) {
 		case TYPE:
 			handleType(args)
 		case PWD:
-			handlePwd(args)
+			handlePresentWorkingDirectory(args)
+		case CD:
+			handleChangeDirectory(args)
 	}
 }
 func handleExit() {
@@ -108,7 +112,7 @@ func handleType(args []string) {
 	}
 }
 
-func handlePwd(args []string) {
+func handlePresentWorkingDirectory(args []string) {
 	if len(args) > 0 {
 		fmt.Println("pwd: too many arguments")
 		return
@@ -119,6 +123,17 @@ func handlePwd(args []string) {
 		return
 	}
 	fmt.Println(pwd)
+}
+
+func handleChangeDirectory(args []string) {
+	if len(args) == 0 {
+		return
+	} else {
+		err := os.Chdir(args[0])
+		if err != nil {
+			fmt.Printf("cd: %s: No such file or directory\n", args[0])
+		}
+	}
 }
 
 func handleExecutable(command string, path string, args []string) {
