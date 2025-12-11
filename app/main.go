@@ -15,6 +15,7 @@ const (
 	EXIT = "exit"
 	ECHO = "echo"
 	TYPE = "type"
+	PWD  = "pwd"
 )
 
 var builtinCommands = make(map[string]bool)
@@ -41,6 +42,7 @@ func init() {
 	builtinCommands[ECHO] = true
 	builtinCommands[EXIT] = true
 	builtinCommands[TYPE] = true
+	builtinCommands[PWD] = true
 }
 
 func main() {
@@ -59,20 +61,27 @@ func main() {
 
 		command = strings.Split(command, "\n")[0]
 		switch {
-		case command == EXIT:
-			handleExit()
-		case command == ECHO:
-			handleEcho(args)
-		case command == TYPE:
-			handleType(args)
-		case func() bool { _, ok := executables[command]; return ok }():
-			handleExecutable(command, executables[command], args)
-		default:
-			fmt.Println(command + ": command not found")
+			case func() bool { _, ok := builtinCommands[command]; return ok }():
+				handleBuiltIn(command, args)
+			case func() bool { _, ok := executables[command]; return ok }():
+				handleExecutable(command, executables[command], args)
+			default:
+				fmt.Println(command + ": command not found")
 		}
 	}
 }
-
+func handleBuiltIn(command string, args []string) {
+	switch command {
+		case EXIT:
+			handleExit()
+		case ECHO:
+			handleEcho(args)
+		case TYPE:
+			handleType(args)
+		case PWD:
+			handlePwd(args)
+	}
+}
 func handleExit() {
 	os.Exit(0)
 }
@@ -97,6 +106,19 @@ func handleType(args []string) {
 			}
 		}
 	}
+}
+
+func handlePwd(args []string) {
+	if len(args) > 0 {
+		fmt.Println("pwd: too many arguments")
+		return
+	}	
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("pwd: error retrieving current directory")
+		return
+	}
+	fmt.Println(pwd)
 }
 
 func handleExecutable(command string, path string, args []string) {
